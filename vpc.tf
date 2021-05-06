@@ -60,19 +60,34 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-resource "aws_nat_gateway" "nat-gw" {
+resource "aws_eip" "eip1" {
+  vpc      = true
+}
 
-  allocation_id = aws_eip.eip.id
+resource "aws_eip" "eip2" {
+  vpc      = true
+}
+
+resource "aws_nat_gateway" "nat-gw1" {
+
+  allocation_id = aws_eip.eip1.id
   subnet_id     = aws_subnet.public1.id
 
   tags = {
-    Name = "nat-gw"
+    Name = "nat-gw1"
   }
 }
 
-resource "aws_eip" "eip" {
-  vpc      = true
+resource "aws_nat_gateway" "nat-gw2" {
+
+  allocation_id = aws_eip.eip2.id
+  subnet_id     = aws_subnet.public2.id
+
+  tags = {
+    Name = "nat-gw2"
+  }
 }
+
 
 resource "aws_route_table" "public-rt" {
   vpc_id = aws_vpc.vpc.id
@@ -87,16 +102,29 @@ resource "aws_route_table" "public-rt" {
   }
 }
 
-resource "aws_route_table" "private-rt" {
+resource "aws_route_table" "private-rt1" {
   vpc_id = aws_vpc.vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.nat-gw.id
+    gateway_id = aws_nat_gateway.nat-gw1.id
   }
 
   tags = {
     Name = "private-rt"
+  }
+}
+
+resource "aws_route_table" "private-rt2" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat-gw2.id
+  }
+
+  tags = {
+    Name = "private-rt2"
   }
 }
 
@@ -112,10 +140,10 @@ resource "aws_route_table_association" "public2" {
 
 resource "aws_route_table_association" "private1" {
   subnet_id      = aws_subnet.private1.id
-  route_table_id = aws_route_table.private-rt.id
+  route_table_id = aws_route_table.private-rt1.id
 }
 
 resource "aws_route_table_association" "private2" {
   subnet_id      = aws_subnet.private2.id
-  route_table_id = aws_route_table.private-rt.id
+  route_table_id = aws_route_table.private-rt2.id
 }
